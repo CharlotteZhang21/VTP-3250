@@ -41,14 +41,15 @@ var DeviceOrientationController = function(object) {
 
     this.minLatLands = -3;
     this.maxLatLands = 3;
-
+    
     //Portrait
     this.minLonPort = -60;
     this.maxLonPort = 60;
     //Landscape
     this.minLonLands = -30;
     this.maxLonLands = 30;
-    this.mobileVibrationValue = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/) ? 0.022 : 1;
+    //motion sensitivity of ios / android
+    this.mobileVibrationValue = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/) ? 0.022 : 0.022;
 
     // Manual rotate override components
     var startX = 0,
@@ -104,9 +105,9 @@ var DeviceOrientationController = function(object) {
     };
 
     var onDeviceMotionEvent = function() {
-        // if (event.rotationRate.alpha || event.rotationRate.beta || event.rotationRate.gamma)
-        //     gyroPresent = true;
-        // if (typeof event.rotationRate === "undefined") return;
+        if (event.rotationRate.alpha || event.rotationRate.beta || event.rotationRate.gamma)
+            gyroPresent = true;
+        if (typeof event.rotationRate === "undefined") return;
         var x = event.rotationRate.alpha;
         var y = event.rotationRate.beta;
         var portrait = typeof event.portrait !== "undefined" ? event.portrait : window.matchMedia("(orientation: portrait)").matches;
@@ -250,8 +251,7 @@ var DeviceOrientationController = function(object) {
     this.update = function() {
         if (gyroPresent && scope.deviceOrientation.alpha != undefined) {
 
-            var symbolLat = this.lat > this.initLat ? -1 : 1;
-            var symbolLon = this.lon > this.initLon ? -1 : 1;
+            if (scope.enabled === false) return;
 
             if (document.body.clientHeight > document.body.clientWidth) { //portrait
                 this.lat = Math.max(this.minLatPort, Math.min(this.maxLatPort, this.lat));
@@ -260,18 +260,12 @@ var DeviceOrientationController = function(object) {
                 this.lat = Math.max(this.minLatLands, Math.min(this.maxLatLands, this.lat));
                 this.lon = Math.max(this.minLonLands, Math.min(this.maxLonLands, this.lon));
             }
+            
             this.phi = THREE.Math.degToRad(90 - this.lat);
             this.theta = THREE.Math.degToRad(this.lon);
 
             this.thetaCamera = THREE.Math.degToRad(this.lon - 90);
             this.phiCamera = THREE.Math.degToRad(90 - this.lat);
-
-            // document.getElementById("coords").innerHTML = "Lon : " + this.lon.toFixed(2) + ", Lat: " + this.lat.toFixed(2);
-            var compassLon = this.lon;
-
-            compassLon = Math.max(-83, Math.min(83, this.lon));
-
-            // document.getElementById("compass-needle").style.transform = "rotate(" + compassLon + "deg)";
 
             if (lockView) {
                 if (this.lat < -10) {
@@ -495,6 +489,8 @@ var DeviceOrientationController = function(object) {
                 theta = THREE.Math.degToRad(lon);
 
                 // document.getElementById("coords").innerHTML = "Lat: " + this.lat + ", Lon: " + this.lon;
+
+             
 
                 rotQuat.set(0, Math.sin(theta / 2), 0, Math.cos(theta / 2));
 
